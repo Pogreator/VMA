@@ -1,0 +1,26 @@
+{
+  "name": "vma-lang",
+  "displayName": "VMA Lang",
+  "description": "Virtual Machine assembly language designed for simulating custom architectures and logic",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.135.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [{
+      "id": "vma",
+      "aliases": ["VMA", "vma"],
+      "extensions": [".vma"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "vma",
+      "scopeName": "source.vma",
+      "path": "./syntaxes/vma.tmLanguage.json"
+    }]
+  }
+}
