@@ -1,0 +1,479 @@
+// ================================================================
+// F8 FLOATING POINT ADDER
+// ================================================================
+//
+// 8-bit floating point format:
+//
+//   7       6    3 2     0
+//  +---------+-----+-------+
+//  | sign    | exp | frac  |
+//  +---------+-----+-------+
+//
+// exp bias = 7
+//
+// Normalized value:
+//
+//   (-1)^sign * (1 + frac/8) * 2^(exp-7)
+//
+// exp = 0 is treated as zero.
+//
+// This is an educational floating point datapath.
+// It intentionally does not implement:
+//   - NaN
+//   - infinity
+//   - subnormal numbers
+//   - rounding
+//
+// VMA operations used:
+//
+//   AND
+//   OR
+//   XOR
+//   XNOR
+//   NOR
+//   ADDER
+//   SUBTRACTOR
+//   BITSHIFT
+//   MULTIPLEXER
+//
+// ================================================================
+
+
+// ---------------------------------------------------------------
+// Interface
+// ---------------------------------------------------------------
+
+INPUTS(2) = 0
+OUTPUTS(4) = 0
+
+A = INPUTS[0]
+B = INPUTS[1]
+
+A = 0x38
+B = 0x38
+
+RESULT = OUTPUTS[0]
+ZERO_FLAG = OUTPUTS[1]
+CARRY_FLAG = OUTPUTS[2]
+A_LT_B = OUTPUTS[3]
+
+
+// ---------------------------------------------------------------
+// Constants
+//
+// Numeric constants cannot safely be used as data operands because
+// VMA interprets operation operands as IO-state IDs. We therefore
+// create actual constant state locations.
+// ---------------------------------------------------------------
+
+C0 = 0
+C1 = 1
+C2 = 2
+C3 = 3
+C4 = 4
+C5 = 5
+C7 = 7
+C8 = 8
+C15 = 15
+C127 = 127
+
+
+// ---------------------------------------------------------------
+// Decode A
+// ---------------------------------------------------------------
+
+// sign
+BITSHIFT(8, RIGHT, A, C7, A_SIGN, A_SIGN_F)
+AND(8, A_SIGN, C1, A_SIGN_BIT)
+
+// exponent
+BITSHIFT(8, RIGHT, A, C3, A_EXP_SHIFT, A_EXP_SHIFT_F)
+AND(8, A_EXP_SHIFT, C15, A_EXP)
+
+// fraction
+AND(8, A, C7, A_FRAC)
+
+// magnitude = exponent + fraction
+AND(8, A, C127, A_MAG)
+
+
+// ---------------------------------------------------------------
+// Decode B
+// ---------------------------------------------------------------
+
+BITSHIFT(8, RIGHT, B, C7, B_SIGN, B_SIGN_F)
+AND(8, B_SIGN, C1, B_SIGN_BIT)
+
+BITSHIFT(8, RIGHT, B, C3, B_EXP_SHIFT, B_EXP_SHIFT_F)
+AND(8, B_EXP_SHIFT, C15, B_EXP)
+
+AND(8, B, C7, B_FRAC)
+
+AND(8, B, C127, B_MAG)
+
+
+// ---------------------------------------------------------------
+// Determine whether A/B are zero
+//
+// NOR(x,x) becomes nonzero when x == 0.
+// The exact value does not matter because multiplexers only
+// distinguish zero from nonzero.
+// ---------------------------------------------------------------
+
+NOR(8, A_EXP, A_EXP, A_EXP_ZERO)
+NOR(8, B_EXP, B_EXP, B_EXP_ZERO)
+
+
+// ---------------------------------------------------------------
+// Add hidden leading 1 to mantissas.
+//
+// Normal:
+//
+//   1.xxx
+//
+// is represented internally as:
+//
+//   1xxxx
+//
+// where the leading 1 occupies bit 3/4 depending on representation.
+// We use five bits: 1000..1111.
+//
+// Zero operands get mantissa 0.
+// ---------------------------------------------------------------
+
+OR(8, A_FRAC, C8, A_MANT_ONE)
+MULTIPLEXER(8, A_EXP_ZERO, A_MANT_ONE, C0, A_MANT)
+
+OR(8, B_FRAC, C8, B_MANT_ONE)
+MULTIPLEXER(8, B_EXP_ZERO, B_MANT_ONE, C0, B_MANT)
+
+
+// ---------------------------------------------------------------
+// Compare magnitudes.
+//
+// For normalized floating point numbers, exponent+fraction ordering
+// is also magnitude ordering.
+//
+// SUBTRACTOR gives borrow = 1 when A_MAG < B_MAG.
+// ---------------------------------------------------------------
+
+SUBTRACTOR(8, A_MAG, B_MAG, MAG_DIFF, MAG_BORROW)
+
+A_LT_B = MAG_BORROW
+
+
+// ---------------------------------------------------------------
+// Select the larger magnitude operand.
+//
+// If A < B:
+//
+//   BIG = B
+//   SMALL = A
+//
+// Otherwise:
+//
+//   BIG = A
+//   SMALL = B
+// ---------------------------------------------------------------
+
+MULTIPLEXER(8, MAG_BORROW, A_EXP, B_EXP, BIG_EXP)
+MULTIPLEXER(8, MAG_BORROW, B_EXP, A_EXP, SMALL_EXP)
+
+MULTIPLEXER(8, MAG_BORROW, A_MANT, B_MANT, BIG_MANT)
+MULTIPLEXER(8, MAG_BORROW, B_MANT, A_MANT, SMALL_MANT)
+
+MULTIPLEXER(1, MAG_BORROW, A_SIGN_BIT, B_SIGN_BIT, BIG_SIGN)
+
+
+// ---------------------------------------------------------------
+// Exponent difference.
+//
+// BIG_EXP >= SMALL_EXP.
+//
+// This is how far the smaller mantissa has to be shifted right.
+// ---------------------------------------------------------------
+
+SUBTRACTOR(4, BIG_EXP, SMALL_EXP, EXP_DIFF, EXP_DIFF_BORROW)
+
+
+// ---------------------------------------------------------------
+// Align the smaller mantissa.
+//
+// Example:
+//
+//   1.000 x 2^4
+//   1.100 x 2^1
+//
+// becomes:
+//
+//   1.000
+//   0.001
+//
+// before mantissa arithmetic.
+// ---------------------------------------------------------------
+
+BITSHIFT(8, RIGHT, SMALL_MANT, EXP_DIFF, SMALL_ALIGNED, ALIGN_FLAG)
+
+
+// ---------------------------------------------------------------
+// Determine whether signs match.
+//
+// same_sign = 1:
+//
+//     mantissas are added
+//
+// same_sign = 0:
+//
+//     mantissas are subtracted
+// ---------------------------------------------------------------
+
+XNOR(1, BIG_SIGN, B_SIGN_BIT, SAME_SIGN_TEMP)
+
+// The comparison-selected sign is the correct sign for the
+// larger-magnitude operand. Compare it against the corresponding
+// selected smaller sign.
+
+MULTIPLEXER(1, MAG_BORROW, A_SIGN_BIT, B_SIGN_BIT, BIG_SIGN2)
+MULTIPLEXER(1, MAG_BORROW, B_SIGN_BIT, A_SIGN_BIT, SMALL_SIGN2)
+
+XNOR(1, BIG_SIGN2, SMALL_SIGN2, SAME_SIGN)
+
+
+// ---------------------------------------------------------------
+// Mantissa ADD path
+// ---------------------------------------------------------------
+
+ADDER(8, BIG_MANT, SMALL_ALIGNED, MANT_SUM, MANT_SUM_CARRY)
+
+
+// ---------------------------------------------------------------
+// Mantissa SUBTRACT path
+//
+// Because BIG_MANT represents the larger original magnitude and
+// SMALL_ALIGNED <= SMALL_MANT, this subtraction is non-negative.
+// ---------------------------------------------------------------
+
+SUBTRACTOR(8, BIG_MANT, SMALL_ALIGNED, MANT_DIFF, MANT_DIFF_BORROW)
+
+
+// ---------------------------------------------------------------
+// Select addition or subtraction result.
+//
+// same_sign = 1 -> addition
+// same_sign = 0 -> subtraction
+// ---------------------------------------------------------------
+
+MULTIPLEXER(8, SAME_SIGN, MANT_DIFF, MANT_SUM, RAW_MANT)
+
+
+// ---------------------------------------------------------------
+// Detect addition overflow.
+//
+// Mantissas are 5-bit quantities:
+//
+//   1000 .. 1111
+//
+// Maximum:
+//
+//   1111 + 1111 = 11110
+//
+// Therefore bit 4 tells us whether normalization requires a
+// one-bit right shift.
+// ---------------------------------------------------------------
+
+BITSHIFT(8, RIGHT, MANT_SUM, C4, MANT_SUM_TOP, MANT_SUM_TOP_F)
+AND(8, MANT_SUM_TOP, C1, SUM_CARRY)
+
+CARRY_FLAG = SUM_CARRY
+
+
+// ---------------------------------------------------------------
+// Right-normalized form.
+//
+// Example:
+//
+//   10000 -> 1000
+//
+// and exponent increases by one.
+// ---------------------------------------------------------------
+
+BITSHIFT(8, RIGHT, MANT_SUM, C1, RIGHT_MANT, RIGHT_MANT_F)
+
+ADDER(4, BIG_EXP, C1, RIGHT_EXP, RIGHT_EXP_CARRY)
+
+
+// ---------------------------------------------------------------
+// Detect RAW_MANT == 0.
+//
+// This happens for exact cancellation:
+//
+//   +1.0 + -1.0 = 0
+// ---------------------------------------------------------------
+
+NOR(8, RAW_MANT, RAW_MANT, RAW_ZERO)
+
+
+// ---------------------------------------------------------------
+// Examine RAW_MANT bits.
+//
+// We need to find the highest set bit.
+//
+// Desired normalized mantissa:
+//
+//       1000
+//
+// If RAW_MANT is:
+//
+//       1xxxx -> shift 0
+//       01xxx -> shift 1
+//       001xx -> shift 2
+//       0001x -> shift 3
+//       00001 -> shift 4
+//
+// ---------------------------------------------------------------
+
+BITSHIFT(8, RIGHT, RAW_MANT, C0, RAW_B0_SHIFT, RAW_B0_F)
+AND(8, RAW_B0_SHIFT, C1, RAW_B0)
+
+BITSHIFT(8, RIGHT, RAW_MANT, C1, RAW_B1_SHIFT, RAW_B1_F)
+AND(8, RAW_B1_SHIFT, C1, RAW_B1)
+
+BITSHIFT(8, RIGHT, RAW_MANT, C2, RAW_B2_SHIFT, RAW_B2_F)
+AND(8, RAW_B2_SHIFT, C1, RAW_B2)
+
+BITSHIFT(8, RIGHT, RAW_MANT, C3, RAW_B3_SHIFT, RAW_B3_F)
+AND(8, RAW_B3_SHIFT, C1, RAW_B3)
+
+BITSHIFT(8, RIGHT, RAW_MANT, C4, RAW_B4_SHIFT, RAW_B4_F)
+AND(8, RAW_B4_SHIFT, C1, RAW_B4)
+
+
+// ---------------------------------------------------------------
+// Priority encoder.
+//
+// Start with bit 0:
+//
+//   bit0 -> shift 4
+//
+// Then higher bits override it:
+//
+//   bit1 -> shift 3
+//   bit2 -> shift 2
+//   bit3 -> shift 1
+//   bit4 -> shift 0
+//
+// ---------------------------------------------------------------
+
+MULTIPLEXER(8, RAW_B0, C0, C4, NORM_COUNT0)
+MULTIPLEXER(8, RAW_B1, NORM_COUNT0, C3, NORM_COUNT1)
+MULTIPLEXER(8, RAW_B2, NORM_COUNT1, C2, NORM_COUNT2)
+MULTIPLEXER(8, RAW_B3, NORM_COUNT2, C1, NORM_COUNT3)
+MULTIPLEXER(8, RAW_B4, NORM_COUNT3, C0, NORM_COUNT)
+
+
+// ---------------------------------------------------------------
+// Left normalization.
+//
+// The count is dynamically supplied to BITSHIFT.
+// ---------------------------------------------------------------
+
+BITSHIFT(8, LEFT, RAW_MANT, NORM_COUNT, LEFT_MANT, LEFT_MANT_F)
+
+
+// ---------------------------------------------------------------
+// Decrease exponent by normalization count.
+//
+// Example:
+//
+//   0010 -> 1000
+//
+// requires exponent - 2.
+// ---------------------------------------------------------------
+
+SUBTRACTOR(4, BIG_EXP, NORM_COUNT, LEFT_EXP, LEFT_EXP_BORROW)
+
+
+// ---------------------------------------------------------------
+// Select right-normalized or left-normalized result.
+//
+// SUM_CARRY:
+//
+//   1 -> right normalization
+//   0 -> left normalization
+// ---------------------------------------------------------------
+
+MULTIPLEXER(8, SUM_CARRY, LEFT_MANT, RIGHT_MANT, NORMAL_MANT)
+
+MULTIPLEXER(4, SUM_CARRY, LEFT_EXP, RIGHT_EXP, NORMAL_EXP)
+
+
+// ---------------------------------------------------------------
+// Select the fraction bits.
+//
+// Internal mantissa is:
+//
+//   1xxx
+//
+// Only the low three fraction bits are stored.
+// ---------------------------------------------------------------
+
+AND(8, NORMAL_MANT, C7, NORMAL_FRAC)
+
+
+// ---------------------------------------------------------------
+// Select sign.
+//
+// The larger magnitude operand determines the sign.
+// ---------------------------------------------------------------
+
+MULTIPLEXER(1, MAG_BORROW, A_SIGN_BIT, B_SIGN_BIT, RESULT_SIGN)
+
+
+// ---------------------------------------------------------------
+// Pack exponent.
+//
+// exp << 3
+// ---------------------------------------------------------------
+
+BITSHIFT(8, LEFT, NORMAL_EXP, C3, PACK_EXP, PACK_EXP_F)
+
+
+// ---------------------------------------------------------------
+// Pack sign.
+//
+// sign << 7
+// ---------------------------------------------------------------
+
+BITSHIFT(8, LEFT, RESULT_SIGN, C7, PACK_SIGN, PACK_SIGN_F)
+
+
+// ---------------------------------------------------------------
+// Assemble:
+//
+//   sign | exponent | fraction
+// ---------------------------------------------------------------
+
+OR(8, PACK_EXP, NORMAL_FRAC, PACK_SE)
+OR(8, PACK_SIGN, PACK_SE, PACKED_RESULT)
+
+
+// ---------------------------------------------------------------
+// Exact zero overrides everything.
+//
+// If mantissa is zero:
+//
+//   result = 0
+//
+// Otherwise:
+//
+//   result = normalized result.
+// ---------------------------------------------------------------
+
+MULTIPLEXER(8, RAW_ZERO, PACKED_RESULT, C0, RESULT)
+
+
+// ---------------------------------------------------------------
+// Debug outputs
+// ---------------------------------------------------------------
+
+ZERO_FLAG = RAW_ZERO

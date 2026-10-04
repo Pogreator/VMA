@@ -81,7 +81,7 @@ public class LogicSim
 			case TYPES.NOT:
 				{
 					ulong mask = BitWidthToMask((int)ByteCode[ExecutionPosition+1]);
-					ulong a = ByteCode[ExecutionPosition+2];
+					ulong a = IOStates[ByteCode[ExecutionPosition+2]];
 					ulong output = ByteCode[ExecutionPosition+3];
 
 					IOStates[output] = ~a & mask;
@@ -93,8 +93,8 @@ public class LogicSim
 			case TYPES.AND:
 				{
 					ulong mask = BitWidthToMask((int)ByteCode[ExecutionPosition+1]);
-					ulong a = ByteCode[ExecutionPosition+2];
-					ulong b = ByteCode[ExecutionPosition+3];
+					ulong a = IOStates[ByteCode[ExecutionPosition+2]];
+					ulong b = IOStates[ByteCode[ExecutionPosition+3]];
 					ulong output = ByteCode[ExecutionPosition+4];
 
 					IOStates[output] = a & b & mask;
@@ -106,8 +106,8 @@ public class LogicSim
 			case TYPES.NAND:
 				{
 					ulong mask = BitWidthToMask((int)ByteCode[ExecutionPosition+1]);
-					ulong a = ByteCode[ExecutionPosition+2];
-					ulong b = ByteCode[ExecutionPosition+3];
+					ulong a = IOStates[ByteCode[ExecutionPosition+2]];
+					ulong b = IOStates[ByteCode[ExecutionPosition+3]];
 					ulong output = ByteCode[ExecutionPosition+4];
 
 					IOStates[output] = ~(a & b) & mask;
@@ -119,8 +119,8 @@ public class LogicSim
 			case TYPES.OR:
 				{
 					ulong mask = BitWidthToMask((int)ByteCode[ExecutionPosition+1]);
-					ulong a = ByteCode[ExecutionPosition+2];
-					ulong b = ByteCode[ExecutionPosition+3];
+					ulong a = IOStates[ByteCode[ExecutionPosition+2]];
+					ulong b = IOStates[ByteCode[ExecutionPosition+3]];
 					ulong output = ByteCode[ExecutionPosition+4];
 
 					IOStates[output] = (a | b) & mask;
@@ -132,8 +132,8 @@ public class LogicSim
 			case TYPES.NOR:
 				{
 					ulong mask = BitWidthToMask((int)ByteCode[ExecutionPosition+1]);
-					ulong a = ByteCode[ExecutionPosition+2];
-					ulong b = ByteCode[ExecutionPosition+3];
+					ulong a = IOStates[ByteCode[ExecutionPosition+2]];
+					ulong b = IOStates[ByteCode[ExecutionPosition+3]];
 					ulong output = ByteCode[ExecutionPosition+4];
 
 					IOStates[output] = ~(a | b) & mask;
@@ -145,8 +145,8 @@ public class LogicSim
 			case TYPES.XOR:
 				{
 					ulong mask = BitWidthToMask((int)ByteCode[ExecutionPosition+1]);
-					ulong a = ByteCode[ExecutionPosition+2];
-					ulong b = ByteCode[ExecutionPosition+3];
+					ulong a = IOStates[ByteCode[ExecutionPosition+2]];
+					ulong b = IOStates[ByteCode[ExecutionPosition+3]];
 					ulong output = ByteCode[ExecutionPosition+4];
 
 					IOStates[output] = (a ^ b) & mask;
@@ -158,8 +158,8 @@ public class LogicSim
 			case TYPES.XNOR:
 				{
 					ulong mask = BitWidthToMask((int)ByteCode[ExecutionPosition+1]);
-					ulong a = ByteCode[ExecutionPosition+2];
-					ulong b = ByteCode[ExecutionPosition+3];
+					ulong a = IOStates[ByteCode[ExecutionPosition+2]];
+					ulong b = IOStates[ByteCode[ExecutionPosition+3]];
 					ulong output = ByteCode[ExecutionPosition+4];
 
 					IOStates[output] = ~(a ^ b) & mask;
