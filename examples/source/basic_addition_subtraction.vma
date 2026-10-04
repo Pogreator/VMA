@@ -1,0 +1,20 @@
+// Initialising 2 Inputs
+INPUTS(2) = 0
+// Initialising 2 Outputs
+OUTPUTS(2) = 0
+
+// Setting input values
+INPUTS[0] = 50
+INPUTS[1] = 25
+
+// Adding 2 64 bit inputs (a, b) to 2 outputs (sum, carry flag)
+ADDER(64, INPUTS[0], INPUTS[1], OUTPUTS[0], OUTPUTS[1])
+
+// Adding 2 32 bit inputs (a, b) to 2 variables (result, carry)
+result, carry = ADDER(32, INPUTS[0], INPUTS[1])
+
+// Subtracting 2 64 bit inputs (a, b) to 2 variables (result_sub, carry_sub)
+result_sub, carry_sub = SUBTRACTOR(32, INPUTS[0], INPUTS[1])
+
+// Add 2 variables together
+final_sum, final_carry = ADDER(64, result, OUTPUTS[0])
