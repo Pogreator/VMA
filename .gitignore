@@ -2,6 +2,7 @@
 *.user
 _ReSharper.*
 /bin/
+/dist/
 obj
 packages
 .vscode

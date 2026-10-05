@@ -7,6 +7,7 @@ VMA (Virtual machine assembly language) is a language created to easily allow fo
 It works purely of 64 bit unsigned integers and allows for custom plugin and part creation. All code is translated to byte code, where the logicsim executes it. This language and simulator allow for simulating many different types of computers etc.
 
 ## Building
+If your main goal is just to run VMA, you can just do `dotnet build` or `dotnet run <arguments>`, Otherwise, follow the guide below.
 ### Windows
 1. Download the C# dotnet sdk 8.0:  
 https://dotnet.microsoft.com/en-us/download/dotnet/8.0
