@@ -8,58 +8,58 @@ It works purely of 64 bit unsigned integers and allows for custom plugin and par
 
 ## Building
 ### Windows
-  1. Download the C# dotnet sdk 8.0:  
-  https://dotnet.microsoft.com/en-us/download/dotnet/8.0
-  2. Open CMD (Command Prompt / Terminal).
-  3. Verify installation:  
-  `dotnet --version`
-  - ### Build:
-    - Open cmd in the source folder.
-    - Run this in cmd:    
-   `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true -o ./dist/windows`
+1. Download the C# dotnet sdk 8.0:  
+https://dotnet.microsoft.com/en-us/download/dotnet/8.0
+2. Open CMD (Command Prompt / Terminal).
+3. Verify installation:  
+`dotnet --version`
+- ### Build:
+  - Open cmd in the source folder.
+  - Run this in cmd:    
+  `dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true --self-contained true -o ./dist/windows`
 
 ### Linux
-  1. Download the C# dotnet sdk 8.0 through:  
-    - Package Managers:  
-    ```bash
-    # 1. Arch Linux (Official extra repository)
-    sudo pacman -S dotnet-sdk-8.0
+1. Download the C# dotnet sdk 8.0 through:  
+  - Package Managers:  
+  ```bash
+  # 1. Arch Linux (Official extra repository)
+  sudo pacman -S dotnet-sdk-8.0
 
-    # 2. Ubuntu / Debian (Native APT feed)
-    # Note: For older Ubuntu releases, you may need to add 'ppa:dotnet/backports' first
-    sudo apt update && sudo apt install -y dotnet-sdk-8.0
+  # 2. Ubuntu / Debian (Native APT feed)
+  # Note: For older Ubuntu releases, you may need to add 'ppa:dotnet/backports' first
+  sudo apt update && sudo apt install -y dotnet-sdk-8.0
 
-    # 3. Fedora / RHEL / CentOS (DNF appstream)
-    sudo dnf install -y dotnet-sdk-8.0
-    ```
-    - Website:  
-      - if your package manager does not have the SDK 8.0 available, the website can be used:  
-      https://dotnet.microsoft.com/en-us/download/dotnet/8.0
-  2. Open a terminal of your choice.
-  3. Verify installation:  
-  `dotnet --version`
-  - ### Build:
-    - Open the terminal and cd to the root folder.
-    - Run this in cmd:    
-   `dotnet publish -c Release -r linux-x64 -p:PublishSingleFile=true --self-contained true -o ./dist/linux`
+  # 3. Fedora / RHEL / CentOS (DNF appstream)
+  sudo dnf install -y dotnet-sdk-8.0
+  ```
+  - Website:  
+    - if your package manager does not have the SDK 8.0 available, the website can be used:  
+    https://dotnet.microsoft.com/en-us/download/dotnet/8.0
+2. Open a terminal of your choice.
+3. Verify installation:  
+`dotnet --version`
+- ### Build:
+  - Open the terminal and cd to the root folder.
+  - Run this in cmd:    
+  `dotnet publish -c Release -r linux-x64 -p:PublishSingleFile=true --self-contained true -o ./dist/linux`
 
 ### macOS (Arm / Apple silicon)
-  1. Download the C# dotnet sdk 8.0 through:  
-    - Package Managers (brew):  
-    ```bash
-    # Homebrew (Cask explicitly targeted to version 8.0)
-  brew install --cask dotnet-sdk8
-    ```
-    - Website:  
-      - if your package manager does not have the SDK 8.0 available, the website can be used:  
-      https://dotnet.microsoft.com/en-us/download/dotnet/8.0
-  2. Open a terminal of your choice.
-  3. Verify installation:  
-  `dotnet --version`
-  - ### Build:
-    - Open the terminal and cd to the root folder.
-    - Run this in cmd:    
-   `dotnet publish -c Release -r osx-arm64 -p:PublishSingleFile=true --self-contained true -o ./dist/mac-arm`
+1. Download the C# dotnet sdk 8.0 through:  
+  - Package Managers (brew):  
+  ```bash
+  # Homebrew (Cask explicitly targeted to version 8.0)
+brew install --cask dotnet-sdk8
+  ```
+  - Website:  
+    - if your package manager does not have the SDK 8.0 available, the website can be used:  
+    https://dotnet.microsoft.com/en-us/download/dotnet/8.0
+2. Open a terminal of your choice.
+3. Verify installation:  
+`dotnet --version`
+- ### Build:
+  - Open the terminal and cd to the root folder.
+  - Run this in cmd:    
+  `dotnet publish -c Release -r osx-arm64 -p:PublishSingleFile=true --self-contained true -o ./dist/mac-arm`
 
 ## Examples
 Examples can be found in the repo in the examples folder. Look at examples/source for the code, examples/bin is the compiled bytecode
