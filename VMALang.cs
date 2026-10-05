@@ -18,50 +18,77 @@
             public List<string> BodyLines = new();
         }
         
-        private ulong GetOrCreateID(string smybol)
+    private ulong GetOrCreateID(string smybol)
+    {
+        smybol = smybol.Trim();
+        if (TryParseNumericLiteral(smybol, out ulong literalValue, out string uniqueKey))
         {
-            smybol = smybol.Trim();
-            if (TryParseNumericLiteral(smybol, out ulong literal)) return literal;
-
-            if (!_symbolTable.TryGetValue(smybol, out ulong id))
+            // Cache the literal under a unique token key string (e.g., "__lit_32") 
+            if (!_symbolTable.TryGetValue(uniqueKey, out ulong litId))
             {
-                id = _nextId++;
-                _symbolTable[smybol] = id;
-
-                if (!smybol.Contains("["))
-                {
-                    _bytecode.AddRange(new[] { 2UL, id, 0UL }); 
-                }
+                litId = _nextId++;
+                _symbolTable[uniqueKey] = litId;
+                
+                _bytecode.AddRange(new[] { 2UL, litId, literalValue });
             }
-
-            return id;
+            return litId;
         }
 
-        private static bool TryParseNumericLiteral(string input, out ulong result)
+        if (!_symbolTable.TryGetValue(smybol, out ulong id))
         {
-            result = 0;
-            input = input.Trim();
-            if (string.IsNullOrEmpty(input)) return false;
+            id = _nextId++;
+            _symbolTable[smybol] = id;
 
-            try
+            if (!smybol.Contains("["))
             {
-                if (input.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = Convert.ToUInt64(input[2..], 16);
-                    return true;
-                }
-                if (input.StartsWith("0b", StringComparison.OrdinalIgnoreCase))
-                {
-                    result = Convert.ToUInt64(input[2..], 2);
-                    return true;
-                }
-                return ulong.TryParse(input, out result);
-            }
-            catch
-            {
-                return false;
+                _bytecode.AddRange(new[] { 2UL, id, 0UL }); 
             }
         }
+
+        return id;
+    }
+
+    private bool TryParseNumericLiteral(string input, out ulong val, out string uniqueKey)
+    {
+        val = 0;
+        uniqueKey = null;
+        input = input.Trim();
+        if (string.IsNullOrEmpty(input)) return false;
+
+        try
+        {
+            bool parsed = false;
+            
+            // Hex parsing
+            if (input.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            {
+                val = Convert.ToUInt64(input[2..], 16);
+                parsed = true;
+            }
+            // Binary parsing
+            else if (input.StartsWith("0b", StringComparison.OrdinalIgnoreCase))
+            {
+                val = Convert.ToUInt64(input[2..], 2);
+                parsed = true;
+            }
+            // Base-10 Integer parsing
+            else
+            {
+                parsed = ulong.TryParse(input, out val);
+            }
+
+            if (parsed)
+            {
+                uniqueKey = $"__lit_{val}__";
+                return true;
+            }
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
         public ulong[] Compile(string sourceCode)
         {
@@ -134,7 +161,7 @@
                     int size = int.Parse(arrayMatch.Groups[2].Value);
                     
                     ulong initVal = 0;
-                    TryParseNumericLiteral(arrayMatch.Groups[3].Value, out initVal);
+                    TryParseNumericLiteral(arrayMatch.Groups[3].Value, out initVal, out _);
                     
                     // Maps directly to simulator engine opcodes
                     ulong opcode = arrayName switch {
@@ -181,7 +208,7 @@
 
                 ulong targetId = GetOrCreateID(resolvedLeft);
 
-                if (TryParseNumericLiteral(resolvedRight, out ulong literalValue))
+                if (TryParseNumericLiteral(resolvedRight, out ulong literalValue, out _))
                 {
                     _bytecode.AddRange(new[] { 2UL, targetId, literalValue });
                     return;
