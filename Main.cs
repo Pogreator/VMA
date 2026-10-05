@@ -16,6 +16,7 @@ class Program
         string outputBinaryPath = null;
         bool constantLoop = false;
         bool singleTestLoop = false;
+        bool isInputBin = false;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -48,7 +49,7 @@ class Program
         if (string.IsNullOrEmpty(inputFilePath))
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Error: Missing required input file path (-i / --input <filename.vma>).");
+            Console.WriteLine("Error: Missing required input file path (-i / --input <filename.vma / filename.bin>).");
             Console.ResetColor();
             PrintUsageGuide();
             return;
@@ -62,6 +63,8 @@ class Program
             return;
         }
 
+        isInputBin = Path.GetExtension(inputFilePath).Equals(".bin", StringComparison.OrdinalIgnoreCase);
+
         if (!constantLoop && !singleTestLoop)
         {
             singleTestLoop = true; 
@@ -69,31 +72,46 @@ class Program
 
         try
         {
-            Console.WriteLine($" Reading source script: {inputFilePath}...");
-            string sourceCode = File.ReadAllText(inputFilePath);
+            ulong[] bytecodeArray;
+            if (!isInputBin)
+            {
+                Console.WriteLine($"> Reading source script: {inputFilePath}...");
+                string sourceCode = File.ReadAllText(inputFilePath);
 
-            Console.WriteLine(" Compiling layout to 64-bit virtual machine bytecode...");
-            VMALang compiler = new VMALang();
-            ulong[] bytecodeArray = compiler.Compile(sourceCode);
+                Console.WriteLine("> Compiling layout to 64-bit virtual machine bytecode...");
+                VMALang compiler = new VMALang();
+                bytecodeArray = compiler.Compile(sourceCode);
 
-            Console.WriteLine("------------------------------------------------");
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Compilation Successful!");
-            Console.ResetColor();
-            Console.WriteLine($"Total 64-bit Words Generated: {bytecodeArray.Length}");
-            Console.WriteLine("------------------------------------------------");
+                Console.WriteLine("------------------------------------------------");
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Compilation Successful!");
+                Console.ResetColor();
+                Console.WriteLine($"Total 64-bit Words Generated: {bytecodeArray.Length}");
+                Console.WriteLine("------------------------------------------------");
+            }
+            else
+            {
+                Console.WriteLine($"> Reading input bytecode: {inputFilePath}...");
+                bytecodeArray = LogicSim.ReadBin(inputFilePath);
+                Console.WriteLine("------------------------------------------------");
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Loading Successful!");
+                Console.ResetColor();
+                Console.WriteLine($"Total 64-bit Words Generated: {bytecodeArray.Length}");
+                Console.WriteLine("------------------------------------------------");
+            }
 
             if (!string.IsNullOrEmpty(outputBinaryPath))
             {
                 Console.WriteLine($" Packaging system data to target: {outputBinaryPath}...");
                 VMALang.SaveBin(outputBinaryPath, bytecodeArray);
             }
-            else
+            else if (!isInputBin)
             {
                 Console.WriteLine(" No output path specified; skipping binary file generation.");
             }
 
-            Console.WriteLine(" Initializing custom LogicSim Engine loop environment...");
+            Console.WriteLine("> Initializing custom LogicSim Engine loop environment...");
             LogicSim simulator = new LogicSim();
             simulator.ByteCode = bytecodeArray;
 
@@ -138,9 +156,15 @@ class Program
         Console.WriteLine("\n[✓] Simulation Run Complete. Finalized Finished Register Dump:");
         Console.ResetColor();
         Console.WriteLine("------------------------------------------------");
-        foreach (var state in simulator.IOStates)
+        foreach (var id in simulator.InputId)
         {
-            Console.WriteLine($"  Address ID: [{state.Key}] -> Decoded State Value: {state.Value} (0x{state.Value:X})");
+            var state = simulator.IOStates[id];
+            Console.WriteLine($">  Input Address ID: [{id}] -> Decoded State Value: {state} (0x{state:X})");
+        }
+        foreach (var id in simulator.OutputId)
+        {
+            var state = simulator.IOStates[id];
+            Console.WriteLine($">  Ouptut Address ID: [{id}] -> Decoded State Value: {state} (0x{state:X})");
         }
         Console.WriteLine("------------------------------------------------");
     }

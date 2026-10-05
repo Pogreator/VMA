@@ -1,0 +1,19 @@
+// Declares 2 inputs with starting value 0
+INPUTS(2) = 0
+// Declares 2 outputs with starting value 0
+OUTPUTS(2) = 0
+// Declares 4 nodes with starting value 0
+NODES(4) = 0
+
+// Nodes are interior links for .vma simulations
+// They function like inputs and outputs
+// They can work as variables aswell
+// Every variable, unless set to a INPUTS or OUTPUTS functions as a node
+
+value = 5 // Creates a new node with value 5
+
+OUTPUTS[0] = value // Sets output 0 to 5
+
+NODES[2] = 20 // Sets NODES[2] to 2
+
+OUTPUTS[1] = NODES[2] // Sets OUTPUTS[1] to NODES[2]

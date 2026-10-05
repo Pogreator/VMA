@@ -52,7 +52,7 @@
 			"patterns": [
 				{
 					"name": "support.function.builtin.io.vma",
-					"match": "\\b(INPUTS|OUTPUTS)\\b"
+					"match": "\\b(INPUTS|OUTPUTS|NODES)\\b"
 				},
 				{
 					"name": "support.function.builtin.gates.vma",
@@ -86,7 +86,15 @@
 		"numbers": {
 			"patterns": [
 				{
-					"name": "constant.numeric.vma",
+					"name": "constant.numeric.hex.vma",
+					"match": "\\b0[xX][0-9a-fA-F]+\\b"
+				},
+				{
+					"name": "constant.numeric.binary.vma",
+					"match": "\\b0[bB][01]+\\b"
+				},
+				{
+					"name": "constant.numeric.decimal.vma",
 					"match": "\\b\\d+\\b"
 				}
 			]

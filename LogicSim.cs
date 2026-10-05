@@ -13,6 +13,8 @@ public class LogicSim
 	{
 		INPUT, // 0 = id | 1 = init input number
 		OUTPUT, // 0 = id | 1 = init output number
+		NODE, // 0 = id | 1 = init number
+		SET, // 0 = id | 1 = a | 2 = b
 		NOT, // 0 = id | 1 = bit_width | 2 = a | 3 = output
 		AND, // 0 = id | 1 = bit_width | 2 = a | 3 = b | 4 = output
 		NAND, // 0 = id | 1 = bit_width | 2 = a | 3 = b | 4 = output
@@ -75,6 +77,24 @@ public class LogicSim
 					}
 					IOStates[id] = value;
 					ExecutionPosition+=2;
+					break;
+				}
+			
+			case TYPES.NODE:
+				{
+					ulong id = ByteCode[ExecutionPosition];
+					ulong value = ByteCode[ExecutionPosition+1];
+					IOStates[id] = value;
+					ExecutionPosition+=2;
+					break;
+				}
+
+			case TYPES.SET:
+				{
+					ulong a = ByteCode[ExecutionPosition+1];
+					ulong b = ByteCode[ExecutionPosition+2];
+					IOStates[a] = IOStates[b];
+					ExecutionPosition+=3;
 					break;
 				}
 

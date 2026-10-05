@@ -1,0 +1,25 @@
+// Creates 2 inputs with starting value 0
+// Inputs in VMA allow for external manipulation to the sim
+// They are part of the IO system
+// The IO system contains INPUTS, OUTPUTS and NODES
+INPUTS(4) = 0
+
+// Creates 2 outputs with starting value 0
+// Outputs in VMA allow for data transfer between sims
+// They are part of the IO system
+OUTPUTS(2) = 0
+
+// Both inputs and outputs can be assigned literal values
+// Literal values can be either int, hex or binary
+INPUTS[0] = 0
+INPUTS[1] = 255
+INPUTS[2] = 0x0F
+INPUTS[3] = 0b00000011
+
+// outputs can be set to the value of an input
+OUTPUTS[0] = INPUTS[1]
+OUTPUTS[1] = INPUTS[2]
+
+// inputs can be set to the value of an output
+INPUTS[0] = OUTPUTS[0]
+INPUTS[1] = OUTPUTS[1]
