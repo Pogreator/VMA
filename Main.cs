@@ -159,12 +159,12 @@ class Program
         foreach (var id in simulator.InputId)
         {
             var state = simulator.IOStates[id];
-            Console.WriteLine($">  Input Address ID: [{id}] -> Decoded State Value: {state} (0x{state:X})");
+            Console.WriteLine($">  Input Address ID: [{id}] -> Decoded State Value: {state} | {(long)state} | 0x{state:X}");
         }
         foreach (var id in simulator.OutputId)
         {
             var state = simulator.IOStates[id];
-            Console.WriteLine($">  Ouptut Address ID: [{id}] -> Decoded State Value: {state} (0x{state:X})");
+            Console.WriteLine($">  Ouptut Address ID: [{id}] -> Decoded State Value: {state} | {(long)state} | 0x{state:X}");
         }
         Console.WriteLine("------------------------------------------------");
     }

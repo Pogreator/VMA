@@ -1,0 +1,29 @@
+INPUTS(2) = 0
+OUTPUTS(4) = 0
+
+a = INPUTS[0]
+b = INPUTS[1]
+
+a = 20
+b = 30
+
+select = 0
+
+// Components create a macro for reusable code blocks
+// They allow for organisation and are strongly reccomended for more complex simulations
+
+// Delcared by Component key word, 2 sets of parenthesis
+// First set of parenthesis is for inputs, second is for outputs
+
+// This component either adds 2 numbers or subtracts 2 numbers based on the value of in_c
+
+Component AddOrSub(in_a, in_b, in_c)(out_a, out_b){
+    res0, flag0 = ADDER(64, in_a, in_b) // Adding 2 numbers, storing to res0, flag0
+    res1, flag1 = SUBTRACTOR(64, in_a, in_b) // Subtracting 2 numbers, storing to res1, flag1
+    out_a = MULTIPLEXER(64, in_c, res0, res1) // Choosing based on in_c which to be out_a
+    out_b = MULTIPLEXER(64, in_c, flag0, flag1) // Choosing based on in_c which to be out_b
+}
+
+AddOrSub(a,b,select)(OUTPUTS[0],OUTPUTS[1]) // Runs macro (ADD operation)
+select = 1 // Changing value of select
+OUTPUTS[2], OUTPUTS[3] = AddOrSub(a,b,select) // Runs macro (SUB operation)
