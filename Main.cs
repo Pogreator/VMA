@@ -153,7 +153,7 @@ class Program
     private static void PrintRegisterDump(LogicSim simulator)
     {
         Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine("\n[✓] Simulation Run Complete. Finalized Finished Register Dump:");
+        Console.WriteLine("\n[✓] Simulation Run Complete. Input and Output dump:");
         Console.ResetColor();
         Console.WriteLine("------------------------------------------------");
         foreach (var id in simulator.InputId)
