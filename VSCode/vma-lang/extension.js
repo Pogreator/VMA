@@ -5,7 +5,7 @@ const vscode = require('vscode');
  */
 function activate(context) {
     const keywords = [
-        'Component', 'INPUTS', 'OUTPUTS', 'NODES',
+        'Component', 'ENTRY', 'INPUTS', 'OUTPUTS', 'NODES',
         'NOT', 'AND', 'NAND', 'OR', 'NOR', 'XOR', 'XNOR', 
         'ADDER', 'SUBTRACTOR', 'BITSHIFT', 'MULTIPLEXER'
     ];

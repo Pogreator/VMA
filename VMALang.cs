@@ -18,77 +18,77 @@
             public List<string> BodyLines = new();
         }
         
-    private ulong GetOrCreateID(string smybol)
-    {
-        smybol = smybol.Trim();
-        if (TryParseNumericLiteral(smybol, out ulong literalValue, out string uniqueKey))
+        private ulong GetOrCreateID(string smybol)
         {
-            // Cache the literal under a unique token key string (e.g., "__lit_32") 
-            if (!_symbolTable.TryGetValue(uniqueKey, out ulong litId))
+            smybol = smybol.Trim();
+            if (TryParseNumericLiteral(smybol, out ulong literalValue, out string uniqueKey))
             {
-                litId = _nextId++;
-                _symbolTable[uniqueKey] = litId;
+                // Cache the literal under a unique token key string (e.g., "__lit_32") 
+                if (!_symbolTable.TryGetValue(uniqueKey, out ulong litId))
+                {
+                    litId = _nextId++;
+                    _symbolTable[uniqueKey] = litId;
+                    
+                    _bytecode.AddRange(new[] { 2UL, litId, literalValue });
+                }
+                return litId;
+            }
+
+            if (!_symbolTable.TryGetValue(smybol, out ulong id))
+            {
+                id = _nextId++;
+                _symbolTable[smybol] = id;
+
+                if (!smybol.Contains("["))
+                {
+                    _bytecode.AddRange(new[] { 2UL, id, 0UL }); 
+                }
+            }
+
+            return id;
+        }
+
+        private bool TryParseNumericLiteral(string input, out ulong val, out string uniqueKey)
+        {
+            val = 0;
+            uniqueKey = null;
+            input = input.Trim();
+            if (string.IsNullOrEmpty(input)) return false;
+
+            try
+            {
+                bool parsed = false;
                 
-                _bytecode.AddRange(new[] { 2UL, litId, literalValue });
+                // Hex parsing
+                if (input.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                {
+                    val = Convert.ToUInt64(input[2..], 16);
+                    parsed = true;
+                }
+                // Binary parsing
+                else if (input.StartsWith("0b", StringComparison.OrdinalIgnoreCase))
+                {
+                    val = Convert.ToUInt64(input[2..], 2);
+                    parsed = true;
+                }
+                // Base-10 Integer parsing
+                else
+                {
+                    parsed = ulong.TryParse(input, out val);
+                }
+
+                if (parsed)
+                {
+                    uniqueKey = $"__lit_{val}__";
+                    return true;
+                }
+                return false;
             }
-            return litId;
+            catch
+            {
+                return false;
+            }
         }
-
-        if (!_symbolTable.TryGetValue(smybol, out ulong id))
-        {
-            id = _nextId++;
-            _symbolTable[smybol] = id;
-
-            if (!smybol.Contains("["))
-            {
-                _bytecode.AddRange(new[] { 2UL, id, 0UL }); 
-            }
-        }
-
-        return id;
-    }
-
-    private bool TryParseNumericLiteral(string input, out ulong val, out string uniqueKey)
-    {
-        val = 0;
-        uniqueKey = null;
-        input = input.Trim();
-        if (string.IsNullOrEmpty(input)) return false;
-
-        try
-        {
-            bool parsed = false;
-            
-            // Hex parsing
-            if (input.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-            {
-                val = Convert.ToUInt64(input[2..], 16);
-                parsed = true;
-            }
-            // Binary parsing
-            else if (input.StartsWith("0b", StringComparison.OrdinalIgnoreCase))
-            {
-                val = Convert.ToUInt64(input[2..], 2);
-                parsed = true;
-            }
-            // Base-10 Integer parsing
-            else
-            {
-                parsed = ulong.TryParse(input, out val);
-            }
-
-            if (parsed)
-            {
-                uniqueKey = $"__lit_{val}__";
-                return true;
-            }
-            return false;
-        }
-        catch
-        {
-            return false;
-        }
-    }
 
         public ulong[] Compile(string sourceCode)
         {
@@ -108,6 +108,7 @@
 
             List<string> setupLines = new List<string>();
             List<string> logicLines = new List<string>();
+            bool containsEntryPoint = false;
 
             // Pass 1: Extract components and separate setups from logic
             for (int i = 0; i < cleanLines.Count; i++)
@@ -139,6 +140,12 @@
                     continue;
                 }
 
+                var entryDefMatch = Regex.Match(line, @"\bENTRY\b", RegexOptions.IgnoreCase);
+                if (entryDefMatch.Success)
+                {
+                    containsEntryPoint = true;
+                }
+
                 var aliasMatch = Regex.Match(line, @"^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*((?:INPUTS|OUTPUTS|NODES)\[\s*\d+\s*\])", RegexOptions.IgnoreCase);
                 if (aliasMatch.Success)
                 {
@@ -165,9 +172,9 @@
                     
                     // Maps directly to simulator engine opcodes
                     ulong opcode = arrayName switch {
-                        "INPUTS"  => 0UL,
-                        "OUTPUTS" => 1UL,
-                        _         => 2UL //  TYPES.NODE Opcode 2
+                        "INPUTS"  => 1UL,
+                        "OUTPUTS" => 2UL,
+                        _         => 3UL //  TYPES.NODE Opcode 2
                     };
 
                     for (int j = 0; j < size; j++)
@@ -177,6 +184,8 @@
                     }
                 }
             }
+
+            if (containsEntryPoint == false) _bytecode.Add(0UL);
 
             // Pass 3: Process Execution and Operations logic
             foreach (var line in logicLines)
@@ -210,13 +219,13 @@
 
                 if (TryParseNumericLiteral(resolvedRight, out ulong literalValue, out _))
                 {
-                    _bytecode.AddRange(new[] { 2UL, targetId, literalValue });
+                    _bytecode.AddRange(new[] { 3UL, targetId, literalValue });
                     return;
                 }
                 else
                 {
                     ulong sourceId = GetOrCreateID(resolvedRight);
-                    _bytecode.AddRange(new[] { 3UL, _nextId++, targetId, sourceId });
+                    _bytecode.AddRange(new[] { 4UL, _nextId++, targetId, sourceId });
                     return;
                 }
             }
@@ -309,14 +318,17 @@
 
             // 6. Core Instructions
             string upperFunc = funcName.ToUpper();
+
+            // Find entry point of program
+            if (upperFunc == "ENTRY") _bytecode.Add(0UL);
             
             // Complete Logic Gates Processing Suite (Opcodes 2 to 8)
-            if (upperFunc is "NOT" or "AND" or "NAND" or "OR" or "NOR" or "XOR" or "XNOR")
+            else if (upperFunc is "NOT" or "AND" or "NAND" or "OR" or "NOR" or "XOR" or "XNOR")
             {
                 ulong opcode = upperFunc switch {
-                    "NOT"  => 4UL, "AND" => 5UL, "NAND" => 6UL,
-                    "OR"   => 7UL, "NOR" => 8UL, "XOR"  => 9UL,
-                    _      => 10UL
+                    "NOT"  => 5UL, "AND" => 6UL, "NAND" => 7UL,
+                    "OR"   => 8UL, "NOR" => 9UL, "XOR"  => 10UL,
+                    _      => 11UL
                 };
 
                 if (args.Length < 2) return; 
@@ -341,7 +353,7 @@
             {
                 if (args.Length < 3) return; 
 
-                ulong opcode = (upperFunc == "ADDER") ? 11UL : 12UL;
+                ulong opcode = (upperFunc == "ADDER") ? 12UL : 13UL;
                 ulong bitWidth = ulong.Parse(args[0]);
                 ulong aId = GetOrCreateID(args[1]);
                 ulong bId = GetOrCreateID(args[2]);
@@ -364,7 +376,7 @@
             {
                 if (args.Length < 4) return; 
 
-                ulong opcode = 13UL;
+                ulong opcode = 14UL;
                 ulong bitWidth = ulong.Parse(args[0]);
                 ulong direction = args[1].Equals("LEFT", StringComparison.OrdinalIgnoreCase) ? 0UL : 
                                 args[1].Equals("RIGHT", StringComparison.OrdinalIgnoreCase) ? 1UL : GetOrCreateID(args[1]);
@@ -389,7 +401,7 @@
             {
                 if (args.Length < 4) return; 
 
-                ulong opcode = 14UL;
+                ulong opcode = 15UL;
                 ulong bitWidth = ulong.Parse(args[0]);
                 ulong select = GetOrCreateID(args[1]);
                 ulong aId = GetOrCreateID(args[2]);

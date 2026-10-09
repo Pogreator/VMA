@@ -8,9 +8,12 @@ public class LogicSim
 	public List<ulong> InputId { get; set; } = new List<ulong>();
 	public List<ulong> OutputId { get; set; } = new List<ulong>();
 	public Dictionary<ulong, ulong> IOStates { get; set; } = new Dictionary<ulong, ulong>();
+	public List<ulong> ExternCalls { get; set; } = new List<ulong>();
+	public ulong entryByte = 0;
 
-	public enum TYPES
+	public enum TYPES // The types to be parsed by bytecode
 	{
+		ENTRY, // <-- Entry point for sim
 		INPUT, // 0 = id | 1 = init input number
 		OUTPUT, // 0 = id | 1 = init output number
 		NODE, // 0 = id | 1 = init number
@@ -26,6 +29,11 @@ public class LogicSim
 		SUBTRACTOR, // 0 = id | 1 = bit_width | 2 = a | 3 = b | 4 = outputId | 5 = carryOutputID
         BITSHIFT, // 0 - id | 1 = bit_width | 2 = direction (left = 0, right = > 0) | 3 = a | 4 = b | 5 = outputId | 6 = over/under flow output
 		MULTIPLEXER, // 0 - id | 1 = bit_width | 2 = sel | 3 = a | 4 = b | 5 = output
+	}
+
+	public enum CALLS // Any class to this logic sim instance from other scripts
+	{
+		INPUT_SET, // 0 = input_id | 1 = value
 	}
 
 	public static ulong[] ReadBin(string filePath)
@@ -289,6 +297,12 @@ public class LogicSim
                     ExecutionPosition += 6;
                     break;
                 }
+			
+			case TYPES.ENTRY:
+				{
+					entryByte = ExecutionPosition;
+					break;
+				}
 		}
 	}
 
@@ -301,10 +315,30 @@ public class LogicSim
 
 	public void ExecuteByteCode()
 	{
-		ExecutionPosition = 0;
+		ExecutionPosition = entryByte;
 		while (ExecutionPosition < (ulong)ByteCode.Length)
 		{
-		   StepByteCode(); 
+		   StepByteCode(); 	
+		}
+	}
+
+	public void ProcessExternCalls()
+	{
+		for (int i = 0; i < ExternCalls.Count(); i++)
+		{
+			CALLS Type = (CALLS)ExternCalls[i];
+			switch (Type)
+			{
+				case CALLS.INPUT_SET:
+					{
+						if (InputId.Contains(ExternCalls[i + 1]))
+						{
+							IOStates[ExternCalls[i+1]] = ExternCalls[i+2];
+						}
+						i+=2;
+						break;
+					}
+			}
 		}
 	}
 }

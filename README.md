@@ -76,6 +76,8 @@ Built-ins which output numbers can directly allocate to variables. Eg `value, ca
 
 ## Built-ins
 
+- `ENTRY()` - Defines where the program should itterate at during simulation.
+
 - `INPUTS<(), []>` - Allows creating inputs and setting or getting their values.
   - `INPUTS(<value>)` - Creates `<value>` total inputs.
   - `INPUTS[<value>]` - References the input with the specified ID.

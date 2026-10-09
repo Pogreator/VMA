@@ -4,7 +4,12 @@ using System.Threading;
 
 class Program
 {
-    static void Main(string[] args)
+    private static LogicSim simulator = new LogicSim();
+
+    private static bool isSimulationRunning = true;
+    private static readonly object pipelineLock = new object();
+
+    static async Task Main(string[] args)
     {
         if (args.Length == 0 || args[0] == "-h" || args[0] == "--help")
         {
@@ -16,6 +21,7 @@ class Program
         string outputBinaryPath = null;
         bool constantLoop = false;
         bool singleTestLoop = false;
+        bool consoleControl = false;
         bool isInputBin = false;
 
         for (int i = 0; i < args.Length; i++)
@@ -38,10 +44,21 @@ class Program
                 case "--test":
                     singleTestLoop = true;
                     break;
+                case "-c":
+                case "--console":
+                    consoleControl = true;
+                    break;
+                case "--version":
+                    Console.WriteLine("VMA 0.1.3");
+                    return;
                 default:
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.WriteLine($"Warning: Unknown argument flag '{args[i]}' ignored.");
-                    Console.ResetColor();
+                    if (File.Exists(args[i]) && inputFilePath == null) inputFilePath = args[i];
+                    else
+                    {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine($"Warning: Unknown argument '{args[i]}' ignored.");
+                        Console.ResetColor();
+                    }
                     break;
             }
         }
@@ -112,33 +129,85 @@ class Program
             }
 
             Console.WriteLine("> Initializing custom LogicSim Engine loop environment...");
-            LogicSim simulator = new LogicSim();
             simulator.ByteCode = bytecodeArray;
 
             if (singleTestLoop)
             {
                 Console.WriteLine("Running simulation: Single Test Execution Pass (--test)...");
                 simulator.ExecuteByteCode();
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("\n[✓] Simulation Run Complete. Input and Output dump:");
+                Console.ResetColor();
                 PrintRegisterDump(simulator);
             }
             else if (constantLoop)
             {
                 Console.WriteLine("Running simulation: Constant Evaluation Loop Mode (--run)...");
-                Console.WriteLine("Press Ctrl+C to abort the hardware execution pipeline manually.");
+                Console.WriteLine("Press Ctrl+C to abort");
                 Console.WriteLine("------------------------------------------------");
-                
-                ulong totalCycles = 0;
-                while (true)
+                if (consoleControl)
                 {
-                    simulator.ExecuteByteCode();
-                    totalCycles++;
-                    
-                    if (totalCycles % 10000 == 0)
+                    Console.WriteLine("Terminal Control Interfacing Active.");
+                    Console.WriteLine("Commands: 'dump' (read state), 'set <id> <val>' (write input), 'exit'");
+                    Console.WriteLine("------------------------------------------------");
+
+                    _ = Task.Run(() => RunSimulationPipeline(consoleControl));
+
+                    while (isSimulationRunning)
                     {
-                        Console.WriteLine($"[Heartbeat] Cycle tick iteration count: {totalCycles}");
+                        Console.Write("\n> ");
+                        string input = await Console.In.ReadLineAsync();
+                        if (string.IsNullOrWhiteSpace(input)) continue;
+
+                        string[] tokens = input.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        string command = tokens[0].ToLower();
+
+                        switch (command)
+                        {
+                            case "dump":
+                                lock (pipelineLock)
+                                {
+                                    PrintRegisterDump(simulator);
+                                }
+                                break;
+
+                            case "set":
+                                if (tokens.Length >= 3 && int.TryParse(tokens[1], out int id) && ulong.TryParse(tokens[2], out ulong val))
+                                {
+                                    lock (pipelineLock)
+                                    {
+                                        if (simulator.IOStates.ContainsKey((ulong)id))
+                                        {
+                                            simulator.IOStates[(ulong)id] = val;
+                                            Console.WriteLine($"[Control] Successfully mutated Address ID [{(ulong)id}] to State: {simulator.IOStates[(ulong)id]}");
+                                        }
+                                        else
+                                        {
+                                            Console.WriteLine($"[Control Error] Address ID [{(ulong)id}] not registered in current simulation space.");
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    Console.WriteLine("[Control Error] Invalid syntax. Use: set <address_id> <value>");
+                                }
+                                break;
+
+                            case "exit":
+                            case "quit":
+                                isSimulationRunning = false;
+                                Environment.Exit(0);
+                                break;
+
+                            default:
+                                Console.WriteLine("[Control Error] Command not recognized. Use 'dump', 'set', or 'exit'.");
+                                break;
+                        }
                     }
-                    
-                    Thread.Sleep(1);
+                }
+                else
+                {
+                    RunSimulationPipeline(consoleControl);
                 }
             }
         }
@@ -150,12 +219,21 @@ class Program
         }
     }
 
+    private static void RunSimulationPipeline(bool showPrompt)
+    {
+        ulong totalCycles = 0;
+        while (true)
+        {
+            simulator.ExecuteByteCode();
+            totalCycles++;
+            Thread.Sleep(1);
+        }
+    }
+
     private static void PrintRegisterDump(LogicSim simulator)
     {
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine("\n[✓] Simulation Run Complete. Input and Output dump:");
-        Console.ResetColor();
         Console.WriteLine("------------------------------------------------");
+        Console.WriteLine($"> Entry Byte: {simulator.entryByte}");
         foreach (var id in simulator.InputId)
         {
             var state = simulator.IOStates[id];
@@ -172,18 +250,27 @@ class Program
     private static void PrintUsageGuide()
     {
         string exeName = AppDomain.CurrentDomain.FriendlyName;
-        Console.WriteLine("=====================================================================");
-        Console.WriteLine("                  VMA Bytecode Compiler & Simulator CLI              ");
-        Console.WriteLine("=====================================================================");
-        Console.WriteLine("Usage Instructions:");
-        Console.WriteLine($"  dotnet run -- --input <file.vma> [--output <file.bin>] [--test | --run]");
-        Console.WriteLine($"  OR: ./{exeName} -i <file.vma> [-o <file.bin>] [-t | -r]\n");
-        Console.WriteLine("Argument Flags:");
-        Console.WriteLine("  -i, --input <file>   (Required) Path to human-readable text code file.");
-        Console.WriteLine("  -o, --output <file>  (Optional) Target destination for output binary layout.");
-        Console.WriteLine("                       If omitted, no binary payload file is written out.");
-        Console.WriteLine("  -t, --test           (Optional) Run simulation exactly once (Default).");
-        Console.WriteLine("  -r, --run            (Optional) Constant loop evaluation script indefinitely.");
-        Console.WriteLine("=====================================================================");
+        Console.WriteLine($"usage: {exeName} [OPTIONS] [file.vma]");
+        Console.WriteLine();
+        Console.WriteLine("Options:");
+        Console.WriteLine("-i, --input <file>  : specify the input source file containing VMA code");
+        Console.WriteLine("-o, --output <file> : write compiled binary to the specified file");
+        Console.WriteLine("                      if omitted, no binary file is written");
+        Console.WriteLine("-t, --test          : run the simulation exactly once (default)");
+        Console.WriteLine("-r, --run           : run the simulation continuously until interrupted");
+        Console.WriteLine("-c, --console       : allows control of the simulation through console");
+        Console.WriteLine("-h, --help          : display this help message and exit");
+        Console.WriteLine("--version           : get current program version");
+        Console.WriteLine();
+        Console.WriteLine("Arguments:");
+        Console.WriteLine("file.vma            : optional path to the VMA source file");
+        Console.WriteLine("                      may be specified directly or with -i / --input");
+        Console.WriteLine();
+        Console.WriteLine("Examples:");
+        Console.WriteLine($"  {exeName} program.vma");
+        Console.WriteLine($"  {exeName} -i program.vma");
+        Console.WriteLine($"  {exeName} program.vma -o program.bin");
+        Console.WriteLine($"  {exeName} -i program.vma -t");
+        Console.WriteLine($"  {exeName} program.vma -r");
     }
 }

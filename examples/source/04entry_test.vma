@@ -1,0 +1,16 @@
+INPUTS(2) = 0
+OUTPUTS(2) = 0
+
+a = INPUTS[0]
+b = INPUTS[1]
+c = OUTPUTS[0]
+d = OUTPUTS[1]
+
+// Everything behind is ran once
+ENTRY() // Where the program jumps to after looping
+// Everything infront is ran in the loop
+
+// If a program has multiple entries then the last one will take priority
+// If no entry is specified, it is automically added after INPUTS, OUTPUTS and NODES would be (start of program)
+
+ADDER(64, a, b, c, d)

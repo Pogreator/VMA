@@ -51,6 +51,10 @@
 		"builtins": {
 			"patterns": [
 				{
+					"name": "support.function.builtin.flow.vma",
+					"match": "\\bENTRY\\b"
+				},
+				{
 					"name": "support.function.builtin.io.vma",
 					"match": "\\b(INPUTS|OUTPUTS|NODES)\\b"
 				},
