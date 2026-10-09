@@ -123,6 +123,6 @@ Built-ins which output numbers can directly allocate to variables. Eg `value, ca
   - `RIGHT (1)` - Shifts right.
   - Writes the result to `out` and sets `flag` on overflow.
 
-- `MULTIPLEXER(<bit_width>, <sel>, <a>, <b>, <out>)` - Selects between `a` and `b`.
-  - `sel = 0` - Outputs `a`.
-  - `sel = 1` - Outputs `b`.
+- `MULTIPLEXER(<bit_width>, <sel>, <a>, <b>, <out>, <outid>)` - Selects between `a` and `b`.
+  - `sel = 0` - Outputs `a` and id of node 'a'.
+  - `sel = 1` - Outputs `b` and id of node 'a'.

@@ -28,7 +28,7 @@ public class LogicSim
 		ADDER, // 0 = id | 1 = bit_width | 2 = a | 3 = b | 4 = outputId | 5 = carryOutputID
 		SUBTRACTOR, // 0 = id | 1 = bit_width | 2 = a | 3 = b | 4 = outputId | 5 = carryOutputID
         BITSHIFT, // 0 - id | 1 = bit_width | 2 = direction (left = 0, right = > 0) | 3 = a | 4 = b | 5 = outputId | 6 = over/under flow output
-		MULTIPLEXER, // 0 - id | 1 = bit_width | 2 = sel | 3 = a | 4 = b | 5 = output
+		MULTIPLEXER, // 0 - id | 1 = bit_width | 2 = sel | 3 = a | 4 = b | 5 = output | 6 = output_id
 	}
 
 	public enum CALLS // Any class to this logic sim instance from other scripts
@@ -291,10 +291,12 @@ public class LogicSim
                     ulong b      = IOStates[ByteCode[ExecutionPosition + 4]] & mask;
                     
                     ulong outputValue = (select > 0) ? b : a;
+					ulong outputID = (select > 0) ? ByteCode[ExecutionPosition + 4] : ByteCode[ExecutionPosition + 3];
 
                     IOStates[ByteCode[ExecutionPosition + 5]] = outputValue;
+					IOStates[ByteCode[ExecutionPosition + 6]] = outputValue;
                     
-                    ExecutionPosition += 6;
+                    ExecutionPosition += 7;
                     break;
                 }
 			

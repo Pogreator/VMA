@@ -47,7 +47,7 @@ public class VMALang
         ["ADDER"] = new ComponentDef("ADDER",["","","","",""],["",""],[""]),
         ["SUBTRACTOR"] = new ComponentDef("SUBTRACTOR",["","","","",""],["",""],[""]),
         ["BITSHIFT"] = new ComponentDef("BITSHIFT",["","","","","",""],["",""],[""]),
-        ["MULTIPLEXER"] = new ComponentDef("MULTIPLEXER",["","","","","",""],[""],[""]),
+        ["MULTIPLEXER"] = new ComponentDef("MULTIPLEXER",["","","","","",""],["",""],[""]),
     };
     
     private ulong GetOrCreateID(string smybol)
@@ -572,18 +572,20 @@ public class VMALang
             ulong select = GetOrCreateID(args[1]);
             ulong aId = GetOrCreateID(args[2]);
             ulong bId = GetOrCreateID(args[3]);
-            ulong outId;
+            ulong outId, nodeId;
 
             if (leftHandTargets.Count > 0)
             {
                 outId = GetOrCreateID(leftHandTargets[0]);
+                nodeId = leftHandTargets.Count > 1 ? GetOrCreateID(leftHandTargets[1]) : GetOrCreateID($"_node_{_nextId}");
             }
             else
             {
                 outId = args.Length > 4 ? GetOrCreateID(args[4]) : 0UL;
+                nodeId = args.Length > 5 ? GetOrCreateID(args[5]) : 0UL;
             }
 
-            _bytecode.AddRange(new[] { opcode, _nextId++, bitWidth, select, aId, bId, outId });
+            _bytecode.AddRange(new[] { opcode, _nextId++, bitWidth, select, aId, bId, outId, nodeId });
         }
     }
 
