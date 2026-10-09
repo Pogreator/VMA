@@ -3,7 +3,7 @@
   "displayName": "VMA Lang",
   "description": "Virtual Machine assembly language designed for simulating custom architectures and logic",
   "repository": "https://github.com/Pogreator/VMA",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "publisher": "pogreator", 
   "engines": {
     "vscode": "^1.135.0"
