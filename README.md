@@ -1,5 +1,5 @@
 # VMA Lang
-Virtual machine assembly language  
+Virtual machine assembly language: Version 0.1.4
 
 ## Overview
 VMA (Virtual machine assembly language) is a language created to easily allow for simulation of custom architecture and logic components.
@@ -96,6 +96,9 @@ Built-ins which output numbers can directly allocate to variables. Eg `value, ca
   - `value = 5` - Assigns the numeric value `5`.
   - `OUTPUTS[0] = value` - Copies the value of `value` to output `0`.
   - Custom text labels without brackets automatically create a new internal `NODE`.
+
+- `*` - Variable pointer used to assign the ID of a variable instead of a value.
+  - `value = *old_value` - Assigns the id of old_value to value.
 
 - `NOT(<bit_width>, <a>, <out>)` - Performs a bitwise NOT on `a` and writes the result to `out`.
 

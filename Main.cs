@@ -23,6 +23,7 @@ class Program
         bool singleTestLoop = false;
         bool consoleControl = false;
         bool isInputBin = false;
+        bool validation = true;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -48,8 +49,11 @@ class Program
                 case "--console":
                     consoleControl = true;
                     break;
+                case "--ignore-errors":
+                    validation = false;
+                    break;
                 case "--version":
-                    Console.WriteLine("VMA 0.1.3");
+                    Console.WriteLine("VMA 0.1.4");
                     return;
                 default:
                     if (File.Exists(args[i]) && inputFilePath == null) inputFilePath = args[i];
@@ -97,6 +101,7 @@ class Program
 
                 Console.WriteLine("> Compiling layout to 64-bit virtual machine bytecode...");
                 VMALang compiler = new VMALang();
+                compiler._validation = validation;
                 bytecodeArray = compiler.Compile(sourceCode);
 
                 Console.WriteLine("------------------------------------------------");
@@ -261,6 +266,7 @@ class Program
         Console.WriteLine("-c, --console       : allows control of the simulation through console");
         Console.WriteLine("-h, --help          : display this help message and exit");
         Console.WriteLine("--version           : get current program version");
+        Console.WriteLine("--ignore-errors     : compile without validation");
         Console.WriteLine();
         Console.WriteLine("Arguments:");
         Console.WriteLine("file.vma            : optional path to the VMA source file");
@@ -271,6 +277,6 @@ class Program
         Console.WriteLine($"  {exeName} -i program.vma");
         Console.WriteLine($"  {exeName} program.vma -o program.bin");
         Console.WriteLine($"  {exeName} -i program.vma -t");
-        Console.WriteLine($"  {exeName} program.vma -r");
+        Console.WriteLine($"  {exeName} program.vma -r -c");
     }
 }

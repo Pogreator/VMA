@@ -1,0 +1,19 @@
+INPUTS(2) = 0
+OUTPUTS(2) = 0
+
+a = INPUTS[0]
+b = INPUTS[1]
+
+ENTRY()
+
+// C is a pointer to a (as seen by the *)
+// If you change C, you also change A
+c = *a
+// Same for d with b
+d = *b
+// Pointers do not create new nodes
+// They are faster when required than making new nodes
+// But they sometimes aren't feasable
+
+OUTPUTS[0] = c
+OUTPUTS[1] = d
