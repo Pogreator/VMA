@@ -29,7 +29,7 @@
                     litId = _nextId++;
                     _symbolTable[uniqueKey] = litId;
                     
-                    _bytecode.AddRange(new[] { 2UL, litId, literalValue });
+                    _bytecode.AddRange(new[] { 3UL, litId, literalValue });
                 }
                 return litId;
             }
@@ -41,7 +41,7 @@
 
                 if (!smybol.Contains("["))
                 {
-                    _bytecode.AddRange(new[] { 2UL, id, 0UL }); 
+                    _bytecode.AddRange(new[] { 3UL, id, 0UL }); 
                 }
             }
 
